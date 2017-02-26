@@ -4,29 +4,20 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.ArrayMap;
-import android.util.Log;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("WeakerAccess")
 public abstract class Bundler<T> {
 	private static Map<Class, Bundler> customBundlers;
 	private static Map<Class, Bundler> cache;
-
-	static class VoidBundler extends Bundler<Object> {
-		@Override
-		public void put(String key, Object value, Bundle bundle) {}
-
-		@Override
-		public Object get(String key, Bundle bundle) {
-			return null;
-		}
-	};
 
 	public abstract void put(String key, T value, Bundle bundle);
 
@@ -57,11 +48,17 @@ public abstract class Bundler<T> {
 		if (bundler == null) {
 			//noinspection TryWithIdenticalCatches
 			try {
-				bundler = c.newInstance();
+				Constructor<? extends Bundler<T>> defConst = c.getDeclaredConstructor();
+				defConst.setAccessible(true);
+				bundler = defConst.newInstance();
 				cache.put(c, bundler);
 			} catch (InstantiationException e) {
 				throw new RuntimeException(e);
 			} catch (IllegalAccessException e) {
+				throw new RuntimeException(e);
+			} catch (NoSuchMethodException e) {
+				throw new RuntimeException(e);
+			} catch (InvocationTargetException e) {
 				throw new RuntimeException(e);
 			}
 		}
@@ -72,7 +69,7 @@ public abstract class Bundler<T> {
 		Class<?> clss = field.getType();
 
 		Class<? extends Bundler> customBundler = field.getAnnotation(Save.class).value();
-		if (customBundler != VoidBundler.class) {
+		if (customBundler != Bundlers.VoidBundler.class) {
 			//noinspection unchecked
 			return createAndCache((Class)customBundler);
 		}
@@ -85,27 +82,7 @@ public abstract class Bundler<T> {
 		}
 
 		if (clss.isPrimitive()) {
-			if (byte.class == clss) {
-				return Bundlers.ByteBundler.instance;
-			}
-			if (short.class == clss) {
-				return Bundlers.ShortBundler.instance;
-			}
-			if (char.class == clss) {
-				return Bundlers.CharBundler.instance;
-			}
-			if (int.class == clss) {
-				return Bundlers.IntBundler.instance;
-			}
-			if (long.class == clss) {
-				return Bundlers.LongBundler.instance;
-			}
-			if (float.class == clss) {
-				return Bundlers.FloatBundler.instance;
-			}
-			if (double.class == clss) {
-				return Bundlers.DoubleBundler.instance;
-			}
+			return Bundlers.SerializableBundler.instance;
 		}
 
 		if (Parcelable.class.isAssignableFrom(clss)) {
@@ -113,10 +90,16 @@ public abstract class Bundler<T> {
 		}
 
 		if (clss.isArray()) {
-			if (Parcelable.class.isAssignableFrom(clss.getComponentType())) {
-				return Bundlers.ParcelableArrayBundler.instance;
+			if (clss.getComponentType().isPrimitive()) {
+				return Bundlers.SerializableBundler.instance;
 			}
-			// TODO: primitives
+			if (Parcelable.class.isAssignableFrom(clss.getComponentType())) {
+				//noinspection unchecked
+				return new Bundlers.ParcelableArrayBundler(clss);
+			}
+			if (Serializable.class.isAssignableFrom(clss.getComponentType())) {
+				return Bundlers.SerializableBundler.instance;
+			}
 		}
 
 		if (List.class.isAssignableFrom(clss)) {

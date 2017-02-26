@@ -2,6 +2,7 @@ package com.edallagnol.androidsaveinstance;
 
 import android.os.Bundle;
 
+@SuppressWarnings("WeakerAccess")
 public class SaveInstance {
 	private SaveInstance() {
 		throw new AssertionError();
@@ -39,7 +40,7 @@ public class SaveInstance {
 				&& (clss = clss.getSuperclass()) != null);
 	}
 
-	public static <T> void putCustomBundler(Bundler<T> bundler, Class<T> clss) {
+	public static <T> void putCustomBundler(Class<T> clss, Bundler<T> bundler) {
 		Bundler.putCustomBundler(bundler, clss);
 	}
 }

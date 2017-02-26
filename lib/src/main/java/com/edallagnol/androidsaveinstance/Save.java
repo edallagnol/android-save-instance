@@ -6,8 +6,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+@SuppressWarnings("WeakerAccess")
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Save {
-	Class<? extends Bundler> value() default Bundler.VoidBundler.class;
+	Class<? extends Bundler> value() default Bundlers.VoidBundler.class;
 }

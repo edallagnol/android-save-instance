@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.test.runner.AndroidJUnit4;
+import android.util.Log;
 
 import junit.framework.Assert;
 
@@ -16,15 +17,20 @@ import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
 public class ApplicationTest {
+	private static final long ITERATIONS = 10000;
 	@Save private int tInt;
 	@Save private double tDouble;
 	@Save private String tString;
 	@Save private ParcelTest tParcel;
 	@Save private List<String> tList;
 	@Save private List<ParcelTest> tParcelList;
+	@Save private ParcelTest[] tParcelArray;
+	@Save private int[] tPrimitiveArray;
+	@Save(TestIntBundler.class) private int tBundler;
+	@Save private CustomBundlerObj tCustomBundler;
 
 	@Test
-	public void test() throws Exception {
+	public void testParcel() throws Exception {
 		Bundle test = new Bundle();
 		save(test);
 
@@ -35,17 +41,42 @@ public class ApplicationTest {
 		parcel.recycle();
 
 		load(test);
-
-		Assert.assertEquals(tInt, 1);
-		Assert.assertEquals(tDouble, 1.);
-		Assert.assertEquals(tString, "s");
-		Assert.assertEquals(tParcel, new ParcelTest(tInt, tString, tDouble));
-		Assert.assertEquals(tList, Collections.singletonList("s"));
-		Assert.assertEquals(tParcelList, Collections.singletonList(
-				new ParcelTest(tInt, tString, tDouble)));
+		compare();
 	}
 
-	public void save(Bundle test) {
+	@Test
+	public void testReference() throws Exception {
+		Bundle test = new Bundle();
+		save(test);
+		load(test);
+		compare();
+	}
+
+	// max 0.3 ms per iteration
+	@Test(timeout = (long)(ITERATIONS * 0.3))
+	public void performanceInjectorCreationTest() throws Exception {
+		long time = System.currentTimeMillis();
+		for (long i = ITERATIONS; i-- != 0L; ) {
+			Injector.create(getClass());
+		}
+		time = System.currentTimeMillis() - time;
+		Log.i("AppTest-injector", "Total time: " + time);
+		Log.i("AppTest-injector", "P/ operation time: " + ((double) time / ITERATIONS));
+	}
+
+	// max 0.1 ms per iteration
+	@Test(timeout = (long)(ITERATIONS * 0.1))
+	public void performanceSaveLoadTest() throws Exception {
+		long time = System.currentTimeMillis();
+		for (long i = ITERATIONS; i-- != 0L; ) {
+			testReference();
+		}
+		time = System.currentTimeMillis() - time;
+		Log.i("AppTest-saveLoad", "Total time: " + time);
+		Log.i("AppTest-saveLoad", "P/ operation time: " + ((double) time / ITERATIONS));
+	}
+
+	private void save(Bundle test) {
 		tInt = 1;
 		tDouble = 1.;
 		tString = "s";
@@ -54,19 +85,97 @@ public class ApplicationTest {
 		tList.add(tString);
 		tParcelList = new ArrayList<>();
 		tParcelList.add(tParcel);
+		tParcelArray = new ParcelTest[] { tParcel };
+		tPrimitiveArray = new int[] { tInt };
+		tBundler = tInt;
+		tCustomBundler = new CustomBundlerObj(tInt);
+		SaveInstance.putCustomBundler(CustomBundlerObj.class, new TestCustomBundler());
 
 		SaveInstance.save(this, test);
 	}
 
-	public void load(Bundle test) {
+	private void load(Bundle test) {
 		tInt = 0;
 		tDouble = 0.;
 		tString = null;
 		tParcel = null;
 		tList = null;
 		tParcelList = null;
+		tParcelArray = null;
+		tPrimitiveArray = null;
+		tBundler = 0;
 
 		SaveInstance.restore(this, test);
+	}
+
+	private void compare() {
+		Assert.assertEquals(tInt, 1);
+		Assert.assertEquals(tDouble, 1.);
+		Assert.assertEquals(tString, "s");
+		Assert.assertEquals(tParcel, new ParcelTest(tInt, tString, tDouble));
+		Assert.assertEquals(tList, Collections.singletonList("s"));
+		Assert.assertEquals(tParcelList, Collections.singletonList(
+				new ParcelTest(tInt, tString, tDouble)));
+		Assert.assertEquals(tParcelArray[0], tParcel);
+		Assert.assertEquals(tPrimitiveArray[0], tInt);
+		Assert.assertEquals(tBundler, tInt + 2);
+		Assert.assertEquals(tCustomBundler, new CustomBundlerObj(tInt));
+	}
+
+	private static class TestIntBundler extends Bundler<Integer> {
+		@Override
+		public void put(String key, Integer value, Bundle bundle) {
+			bundle.putInt(key, value + 1);
+		}
+
+		@Override
+		public Integer get(String key, Bundle bundle) {
+			return bundle.getInt(key) + 1;
+		}
+	}
+
+	private static class TestCustomBundler extends Bundler<CustomBundlerObj> {
+		@Override
+		public void put(String key, CustomBundlerObj value, Bundle bundle) {
+			if (value == null) {
+				bundle.putInt(key, -1);
+			} else {
+				bundle.putInt(key, value.test);
+			}
+		}
+
+		@Override
+		public CustomBundlerObj get(String key, Bundle bundle) {
+			int test = bundle.getInt(key);
+			if (test == -1) {
+				return null;
+			}
+			return new CustomBundlerObj(test);
+		}
+	}
+
+	private static class CustomBundlerObj {
+		int test;
+
+		CustomBundlerObj(int test) {
+			this.test = test;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+
+			CustomBundlerObj that = (CustomBundlerObj) o;
+
+			return test == that.test;
+
+		}
+
+		@Override
+		public int hashCode() {
+			return test;
+		}
 	}
 
 	private static class ParcelTest implements Parcelable {
@@ -81,9 +190,8 @@ public class ApplicationTest {
 
 			ParcelTest that = (ParcelTest) o;
 
-			if (pInt != that.pInt) return false;
-			if (Double.compare(that.d, d) != 0) return false;
-			return str != null ? str.equals(that.str) : that.str == null;
+			return pInt == that.pInt && Double.compare(that.d, d) == 0
+					&& (str != null ? str.equals(that.str) : that.str == null);
 
 		}
 
@@ -98,13 +206,14 @@ public class ApplicationTest {
 			return result;
 		}
 
-		public ParcelTest(int pInt, String str, double d) {
+		ParcelTest(int pInt, String str, double d) {
 			this.pInt = pInt;
 			this.str = str;
 			this.d = d;
 		}
 
-		protected ParcelTest(Parcel in) {
+
+		ParcelTest(Parcel in) {
 			pInt = in.readInt();
 			str = in.readString();
 			d = in.readDouble();
