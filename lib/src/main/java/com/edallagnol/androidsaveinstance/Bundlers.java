@@ -7,6 +7,8 @@ import android.os.Parcelable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 final class Bundlers {
 	static final class VoidBundler extends Bundler<Object> {
@@ -44,6 +46,27 @@ final class Bundlers {
 		@Override
 		public ArrayList<Parcelable> get(String key, Bundle bundle) {
 			return bundle.getParcelableArrayList(key);
+		}
+	}
+
+	static final class ParcelableSetBundler extends Bundler<Set<Parcelable>> {
+		static final Bundler instance = new ParcelableSetBundler();
+		@Override
+		public void put(String key, Set<Parcelable> value, Bundle bundle) {
+			if (value == null) {
+				bundle.putParcelableArrayList(key, null);
+			} else {
+				bundle.putParcelableArrayList(key, new ArrayList<>(value));
+			}
+		}
+
+		@Override
+		public Set<Parcelable> get(String key, Bundle bundle) {
+			ArrayList<Parcelable> l = bundle.getParcelableArrayList(key);
+			if (l == null) {
+				return null;
+			}
+			return new HashSet<>(l);
 		}
 	}
 

@@ -13,7 +13,9 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
 public class ApplicationTest extends InheritanceTest{
@@ -24,6 +26,7 @@ public class ApplicationTest extends InheritanceTest{
 	@Save private ParcelTest tParcel;
 	@Save private List<String> tList;
 	@Save private List<ParcelTest> tParcelList;
+	@Save private Set<ParcelTest> tParcelSet;
 	@Save private ParcelTest[] tParcelArray;
 	@Save private int[] tPrimitiveArray;
 	@Save(TestIntBundler.class) private int tBundler;
@@ -106,8 +109,8 @@ public class ApplicationTest extends InheritanceTest{
 		tParcel = new ParcelTest(tInt, tString, tDouble);
 		tList = new ArrayList<>();
 		tList.add(tString);
-		tParcelList = new ArrayList<>();
-		tParcelList.add(tParcel);
+		tParcelList = new ArrayList<>(Collections.singleton(tParcel));
+		tParcelSet = new HashSet<>(Collections.singleton(tParcel));
 		tParcelArray = new ParcelTest[] { tParcel };
 		tPrimitiveArray = new int[] { tInt };
 		tBundler = tInt;
@@ -131,6 +134,7 @@ public class ApplicationTest extends InheritanceTest{
 		tParcel = null;
 		tList = null;
 		tParcelList = null;
+		tParcelSet = null;
 		tParcelArray = null;
 		tPrimitiveArray = null;
 		tBundler = 0;
@@ -150,8 +154,8 @@ public class ApplicationTest extends InheritanceTest{
 		Assert.assertEquals(tString, "s");
 		Assert.assertEquals(tParcel, new ParcelTest(tInt, tString, tDouble));
 		Assert.assertEquals(tList, Collections.singletonList("s"));
-		Assert.assertEquals(tParcelList, Collections.singletonList(
-				new ParcelTest(tInt, tString, tDouble)));
+		Assert.assertEquals(tParcelList, Collections.singletonList(tParcel));
+		Assert.assertEquals(tParcelSet, Collections.singleton(tParcel));
 		Assert.assertEquals(tParcelArray[0], tParcel);
 		Assert.assertEquals(tPrimitiveArray[0], tInt);
 		Assert.assertEquals(tBundler, tInt + 2);

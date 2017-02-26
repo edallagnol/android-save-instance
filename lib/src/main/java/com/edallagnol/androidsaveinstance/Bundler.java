@@ -13,6 +13,7 @@ import java.lang.reflect.ParameterizedType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @SuppressWarnings("WeakerAccess")
 public abstract class Bundler<T> {
@@ -102,6 +103,19 @@ public abstract class Bundler<T> {
 			}
 			throw new RuntimeException("The type " + typeArg.getName()
 					+ " must be Parcelable/Serializable." );
+		}
+
+		if (Set.class.isAssignableFrom(clss)) {
+			ParameterizedType setType = (ParameterizedType) field.getGenericType();
+			Class<?> typeArg = (Class<?>) setType.getActualTypeArguments()[0];
+			if (Parcelable.class.isAssignableFrom(typeArg)) {
+				return Bundlers.ParcelableSetBundler.instance;
+			}
+			if (Serializable.class.isAssignableFrom(typeArg)) {
+				return Bundlers.SerializableBundler.instance;
+			}
+			throw new RuntimeException("The type " + typeArg.getName()
+					+ " must be Parcelable/Serializable.");
 		}
 
 		if (Serializable.class.isAssignableFrom(clss)) {
