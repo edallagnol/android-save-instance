@@ -1,41 +1,40 @@
 package com.edallagnol.androidsaveinstance;
 
-import android.os.Build;
 import android.os.Bundle;
-import android.util.ArrayMap;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 class Injector<T> {
 	private static final int INVALID_MODIFIERS = Modifier.STATIC | Modifier.FINAL;
-	private static final Map<Class, Injector> injectorsCache;
+	private static final int CACHE_SIZE = 5; // 5 least recent used entries
+	private static final LinkedHashMap<Class, Injector> injectorsCache;
 
 	static {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-			injectorsCache = new ArrayMap<>();
-		} else {
-			injectorsCache = new HashMap<>();
-		}
+		injectorsCache = new LinkedHashMap<Class, Injector>(CACHE_SIZE, 0.75f, true) {
+			@Override
+			protected boolean removeEldestEntry(Entry eldest) {
+				return size() > CACHE_SIZE;
+			}
+		};
 	}
 
-	private final Field[] anotated;
+	private final Field[] annotated;
 	private final Bundler[] bundlers;
 
-	private Injector(Field[] anotated, Bundler[] bundlers) {
-		this.anotated = anotated;
+	private Injector(Field[] annotated, Bundler[] bundlers) {
+		this.annotated = annotated;
 		this.bundlers = bundlers;
 	}
 
 	@SuppressWarnings("unchecked")
 	final void save(T obj, Bundle outstate) {
 		try {
-			for (int i = 0; i != anotated.length; i++) {
-				Field field = anotated[i];
+			for (int i = 0; i != annotated.length; i++) {
+				Field field = annotated[i];
 				Bundler b = bundlers[i];
 				Object value = field.get(obj);
 				b.put(getName(field), value, outstate);
@@ -48,8 +47,8 @@ class Injector<T> {
 
 	final void restore(T obj, Bundle savedState) {
 		try {
-			for (int i = 0; i != anotated.length; i++) {
-				Field field = anotated[i];
+			for (int i = 0; i != annotated.length; i++) {
+				Field field = annotated[i];
 				Bundler b = bundlers[i];
 				Object value = b.get(getName(field), savedState);
 				field.set(obj, value);

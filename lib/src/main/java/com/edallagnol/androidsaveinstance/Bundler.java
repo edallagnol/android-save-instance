@@ -52,11 +52,12 @@ public abstract class Bundler<T> {
 				defConst.setAccessible(true);
 				bundler = defConst.newInstance();
 				cache.put(c, bundler);
+			} catch (NoSuchMethodException e) {
+				throw new RuntimeException(
+						"Class " + c.getName() + " must have a empty constructor.", e);
 			} catch (InstantiationException e) {
 				throw new RuntimeException(e);
 			} catch (IllegalAccessException e) {
-				throw new RuntimeException(e);
-			} catch (NoSuchMethodException e) {
 				throw new RuntimeException(e);
 			} catch (InvocationTargetException e) {
 				throw new RuntimeException(e);

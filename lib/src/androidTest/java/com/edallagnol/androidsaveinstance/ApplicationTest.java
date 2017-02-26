@@ -16,7 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
-public class ApplicationTest {
+public class ApplicationTest extends InheritanceTest{
 	private static final long ITERATIONS = 10000;
 	@Save private int tInt;
 	@Save private double tDouble;
@@ -32,7 +32,7 @@ public class ApplicationTest {
 	@Test
 	public void testParcel() throws Exception {
 		Bundle test = new Bundle();
-		save(test);
+		save(test, true);
 
 		Parcel parcel = Parcel.obtain();
 		parcel.writeBundle(test);
@@ -40,16 +40,24 @@ public class ApplicationTest {
 		test = parcel.readBundle(getClass().getClassLoader());
 		parcel.recycle();
 
-		load(test);
-		compare();
+		load(test, true);
+		compare(true);
 	}
 
 	@Test
 	public void testReference() throws Exception {
 		Bundle test = new Bundle();
-		save(test);
-		load(test);
-		compare();
+		save(test, true);
+		load(test, true);
+		compare(true);
+	}
+
+	@Test
+	public void testNoInheritance() throws Exception {
+		Bundle test = new Bundle();
+		save(test, false);
+		load(test, false);
+		compare(false);
 	}
 
 	// max 0.3 ms per iteration
@@ -60,23 +68,36 @@ public class ApplicationTest {
 			Injector.create(getClass());
 		}
 		time = System.currentTimeMillis() - time;
-		Log.i("AppTest-injector", "Total time: " + time);
-		Log.i("AppTest-injector", "P/ operation time: " + ((double) time / ITERATIONS));
+		Log.i("AppTest-injector", "Total time: " + time + " ms");
+		Log.i("AppTest-injector", "P/ operation time: " + ((double) time / ITERATIONS) + " ms");
 	}
 
 	// max 0.1 ms per iteration
 	@Test(timeout = (long)(ITERATIONS * 0.1))
-	public void performanceSaveLoadTest() throws Exception {
+	public void performanceSaveLoadTestRefs() throws Exception {
 		long time = System.currentTimeMillis();
 		for (long i = ITERATIONS; i-- != 0L; ) {
 			testReference();
 		}
 		time = System.currentTimeMillis() - time;
-		Log.i("AppTest-saveLoad", "Total time: " + time);
-		Log.i("AppTest-saveLoad", "P/ operation time: " + ((double) time / ITERATIONS));
+		Log.i("AppTest-saveLoadRefs", "Total time: " + time + " ms");
+		Log.i("AppTest-saveLoadRefs", "P/ operation time: " + ((double) time / ITERATIONS) + " ms");
 	}
 
-	private void save(Bundle test) {
+	// max 0.2 ms per iteration
+	@Test(timeout = (long)(ITERATIONS * 0.2))
+	public void performanceSaveLoadTest() throws Exception {
+		long time = System.currentTimeMillis();
+		for (long i = ITERATIONS; i-- != 0L; ) {
+			testParcel();
+		}
+		time = System.currentTimeMillis() - time;
+		Log.i("AppTest-saveLoadParcel", "Total time: " + time + " ms");
+		Log.i("AppTest-saveLoadParcel", "P/ operation time: " + ((double) time / ITERATIONS)
+				+ " ms");
+	}
+
+	private void save(Bundle test, boolean inheritanceTest) {
 		tInt = 1;
 		tDouble = 1.;
 		tString = "s";
@@ -89,12 +110,18 @@ public class ApplicationTest {
 		tPrimitiveArray = new int[] { tInt };
 		tBundler = tInt;
 		tCustomBundler = new CustomBundlerObj(tInt);
+		super.tInheritance = tInt;
+
 		SaveInstance.putCustomBundler(CustomBundlerObj.class, new TestCustomBundler());
 
-		SaveInstance.save(this, test);
+		if (inheritanceTest) {
+			SaveInstance.save(this, test, InheritanceTest.class);
+		} else {
+			SaveInstance.save(this, test);
+		}
 	}
 
-	private void load(Bundle test) {
+	private void load(Bundle test, boolean inheritanceTest) {
 		tInt = 0;
 		tDouble = 0.;
 		tString = null;
@@ -104,11 +131,16 @@ public class ApplicationTest {
 		tParcelArray = null;
 		tPrimitiveArray = null;
 		tBundler = 0;
+		super.tInheritance = 0;
 
-		SaveInstance.restore(this, test);
+		if (inheritanceTest){
+			SaveInstance.restore(this, test, InheritanceTest.class);
+		} else {
+			SaveInstance.restore(this, test);
+		}
 	}
 
-	private void compare() {
+	private void compare(boolean inheritanceTest) {
 		Assert.assertEquals(tInt, 1);
 		Assert.assertEquals(tDouble, 1.);
 		Assert.assertEquals(tString, "s");
@@ -120,6 +152,9 @@ public class ApplicationTest {
 		Assert.assertEquals(tPrimitiveArray[0], tInt);
 		Assert.assertEquals(tBundler, tInt + 2);
 		Assert.assertEquals(tCustomBundler, new CustomBundlerObj(tInt));
+		if (inheritanceTest) {
+			Assert.assertEquals(super.tInheritance, tInt);
+		}
 	}
 
 	private static class TestIntBundler extends Bundler<Integer> {
