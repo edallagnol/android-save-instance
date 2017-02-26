@@ -14,9 +14,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * <a href="http://d.android.com/tools/testing/testing_android.html">Testing Fundamentals</a>
- */
 @RunWith(AndroidJUnit4.class)
 public class ApplicationTest {
 	@Save private int tInt;
