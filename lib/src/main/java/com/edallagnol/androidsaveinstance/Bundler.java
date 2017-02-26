@@ -17,7 +17,6 @@ import java.util.Map;
 @SuppressWarnings("WeakerAccess")
 public abstract class Bundler<T> {
 	private static Map<Class, Bundler> customBundlers;
-	private static Map<Class, Bundler> cache;
 
 	public abstract void put(String key, T value, Bundle bundle);
 
@@ -34,36 +33,22 @@ public abstract class Bundler<T> {
 		customBundlers.put(clss, bundler);
 	}
 
-	private static <T> Bundler<T> createAndCache(Class<? extends Bundler<T>> c) {
-		if (cache == null) {
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-				cache = new ArrayMap<>();
-			} else {
-				cache = new HashMap<>();
-			}
+	private static <T> Bundler<T> createInstance(Class<? extends Bundler<T>> c) {
+		//noinspection TryWithIdenticalCatches
+		try {
+			Constructor<? extends Bundler<T>> defConst = c.getDeclaredConstructor();
+			defConst.setAccessible(true);
+			return defConst.newInstance();
+		} catch (NoSuchMethodException e) {
+			throw new RuntimeException(
+					"Class " + c.getName() + " must have a empty constructor.", e);
+		} catch (InstantiationException e) {
+			throw new RuntimeException(e);
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException(e);
+		} catch (InvocationTargetException e) {
+			throw new RuntimeException(e);
 		}
-
-		@SuppressWarnings("unchecked")
-		Bundler<T> bundler = cache.get(c);
-		if (bundler == null) {
-			//noinspection TryWithIdenticalCatches
-			try {
-				Constructor<? extends Bundler<T>> defConst = c.getDeclaredConstructor();
-				defConst.setAccessible(true);
-				bundler = defConst.newInstance();
-				cache.put(c, bundler);
-			} catch (NoSuchMethodException e) {
-				throw new RuntimeException(
-						"Class " + c.getName() + " must have a empty constructor.", e);
-			} catch (InstantiationException e) {
-				throw new RuntimeException(e);
-			} catch (IllegalAccessException e) {
-				throw new RuntimeException(e);
-			} catch (InvocationTargetException e) {
-				throw new RuntimeException(e);
-			}
-		}
-		return bundler;
 	}
 
 	static Bundler<?> from(Field field) {
@@ -72,7 +57,7 @@ public abstract class Bundler<T> {
 		Class<? extends Bundler> customBundler = field.getAnnotation(Save.class).value();
 		if (customBundler != Bundlers.VoidBundler.class) {
 			//noinspection unchecked
-			return createAndCache((Class)customBundler);
+			return createInstance((Class)customBundler);
 		}
 
 		if (customBundlers != null) {

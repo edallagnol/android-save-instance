@@ -17,7 +17,7 @@ import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
 public class ApplicationTest extends InheritanceTest{
-	private static final long ITERATIONS = 10000;
+	private static final long ITERATIONS = 10000L;
 	@Save private int tInt;
 	@Save private double tDouble;
 	@Save private String tString;
@@ -28,6 +28,8 @@ public class ApplicationTest extends InheritanceTest{
 	@Save private int[] tPrimitiveArray;
 	@Save(TestIntBundler.class) private int tBundler;
 	@Save private CustomBundlerObj tCustomBundler;
+	//same name test
+	@Save private int tInheritance;
 
 	@Test
 	public void testParcel() throws Exception {
@@ -110,6 +112,7 @@ public class ApplicationTest extends InheritanceTest{
 		tPrimitiveArray = new int[] { tInt };
 		tBundler = tInt;
 		tCustomBundler = new CustomBundlerObj(tInt);
+		this.tInheritance = 2;
 		super.tInheritance = tInt;
 
 		SaveInstance.putCustomBundler(CustomBundlerObj.class, new TestCustomBundler());
@@ -131,6 +134,7 @@ public class ApplicationTest extends InheritanceTest{
 		tParcelArray = null;
 		tPrimitiveArray = null;
 		tBundler = 0;
+		this.tInheritance = 0;
 		super.tInheritance = 0;
 
 		if (inheritanceTest){
@@ -153,6 +157,7 @@ public class ApplicationTest extends InheritanceTest{
 		Assert.assertEquals(tBundler, tInt + 2);
 		Assert.assertEquals(tCustomBundler, new CustomBundlerObj(tInt));
 		if (inheritanceTest) {
+			Assert.assertEquals(this.tInheritance, 2);
 			Assert.assertEquals(super.tInheritance, tInt);
 		}
 	}
