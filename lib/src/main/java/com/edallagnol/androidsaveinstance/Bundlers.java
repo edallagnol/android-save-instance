@@ -98,6 +98,20 @@ final class Bundlers {
 		}
 	}
 
+	static final class CharSequenceBundler extends Bundler<CharSequence> {
+		static final Bundler instance = new CharSequenceBundler();
+
+		@Override
+		public void put(String key, CharSequence value, Bundle bundle) {
+			bundle.putCharSequence(key, value);
+		}
+
+		@Override
+		public CharSequence get(String key, Bundle bundle) {
+			return bundle.getCharSequence(key);
+		}
+	}
+
 	static final class SerializableBundler extends Bundler<Serializable> {
 		static final Bundler instance = new SerializableBundler();
 

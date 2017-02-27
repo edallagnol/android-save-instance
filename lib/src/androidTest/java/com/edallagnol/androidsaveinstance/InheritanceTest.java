@@ -1,5 +1,8 @@
 package com.edallagnol.androidsaveinstance;
 
-class InheritanceTest {
+import java.util.List;
+
+class InheritanceTest<T> {
 	@Save int tInheritance;
+	@Save List<T> tListGeneric;
 }

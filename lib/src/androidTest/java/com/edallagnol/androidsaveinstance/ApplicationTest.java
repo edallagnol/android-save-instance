@@ -18,11 +18,12 @@ import java.util.List;
 import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
-public class ApplicationTest extends InheritanceTest{
-	private static final long ITERATIONS = 10000L;
+public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest> {
+	private static final long ITERATIONS = 1000L;
 	@Save private int tInt;
 	@Save private double tDouble;
 	@Save private String tString;
+	@Save private CharSequence tCharSequence;
 	@Save private ParcelTest tParcel;
 	@Save private List<String> tList;
 	@Save private List<ParcelTest> tParcelList;
@@ -65,20 +66,20 @@ public class ApplicationTest extends InheritanceTest{
 		compare(false);
 	}
 
-	// max 0.3 ms per iteration
-	@Test(timeout = (long)(ITERATIONS * 0.3))
+	// max 3 ms per iteration
+	@Test(timeout = ITERATIONS * 3)
 	public void performanceInjectorCreationTest() throws Exception {
 		long time = System.currentTimeMillis();
 		for (long i = ITERATIONS; i-- != 0L; ) {
-			Injector.create(getClass());
+			Injector.create(ApplicationTest.class, ApplicationTest.class);
 		}
 		time = System.currentTimeMillis() - time;
 		Log.i("AppTest-injector", "Total time: " + time + " ms");
 		Log.i("AppTest-injector", "P/ operation time: " + ((double) time / ITERATIONS) + " ms");
 	}
 
-	// max 0.1 ms per iteration
-	@Test(timeout = (long)(ITERATIONS * 0.1))
+	// max 0.6 ms per iteration
+	@Test(timeout = (long)(ITERATIONS * 0.6))
 	public void performanceSaveLoadTestRefs() throws Exception {
 		long time = System.currentTimeMillis();
 		for (long i = ITERATIONS; i-- != 0L; ) {
@@ -89,8 +90,8 @@ public class ApplicationTest extends InheritanceTest{
 		Log.i("AppTest-saveLoadRefs", "P/ operation time: " + ((double) time / ITERATIONS) + " ms");
 	}
 
-	// max 0.2 ms per iteration
-	@Test(timeout = (long)(ITERATIONS * 0.2))
+	// max 1 ms per iteration
+	@Test(timeout = ITERATIONS)
 	public void performanceSaveLoadTest() throws Exception {
 		long time = System.currentTimeMillis();
 		for (long i = ITERATIONS; i-- != 0L; ) {
@@ -106,6 +107,7 @@ public class ApplicationTest extends InheritanceTest{
 		tInt = 1;
 		tDouble = 1.;
 		tString = "s";
+		tCharSequence = tString;
 		tParcel = new ParcelTest(tInt, tString, tDouble);
 		tList = new ArrayList<>();
 		tList.add(tString);
@@ -115,6 +117,7 @@ public class ApplicationTest extends InheritanceTest{
 		tPrimitiveArray = new int[] { tInt };
 		tBundler = tInt;
 		tCustomBundler = new CustomBundlerObj(tInt);
+		super.tListGeneric = tParcelList;
 		this.tInheritance = 2;
 		super.tInheritance = tInt;
 
@@ -131,6 +134,7 @@ public class ApplicationTest extends InheritanceTest{
 		tInt = 0;
 		tDouble = 0.;
 		tString = null;
+		tCharSequence = null;
 		tParcel = null;
 		tList = null;
 		tParcelList = null;
@@ -138,10 +142,11 @@ public class ApplicationTest extends InheritanceTest{
 		tParcelArray = null;
 		tPrimitiveArray = null;
 		tBundler = 0;
+		super.tListGeneric = null;
 		this.tInheritance = 0;
 		super.tInheritance = 0;
 
-		if (inheritanceTest){
+		if (inheritanceTest) {
 			SaveInstance.restore(this, test, InheritanceTest.class);
 		} else {
 			SaveInstance.restore(this, test);
@@ -152,6 +157,7 @@ public class ApplicationTest extends InheritanceTest{
 		Assert.assertEquals(tInt, 1);
 		Assert.assertEquals(tDouble, 1.);
 		Assert.assertEquals(tString, "s");
+		Assert.assertEquals(tCharSequence, tString);
 		Assert.assertEquals(tParcel, new ParcelTest(tInt, tString, tDouble));
 		Assert.assertEquals(tList, Collections.singletonList("s"));
 		Assert.assertEquals(tParcelList, Collections.singletonList(tParcel));
@@ -161,6 +167,7 @@ public class ApplicationTest extends InheritanceTest{
 		Assert.assertEquals(tBundler, tInt + 2);
 		Assert.assertEquals(tCustomBundler, new CustomBundlerObj(tInt));
 		if (inheritanceTest) {
+			Assert.assertEquals(this.tParcelList, tListGeneric);
 			Assert.assertEquals(this.tInheritance, 2);
 			Assert.assertEquals(super.tInheritance, tInt);
 		}
@@ -222,7 +229,7 @@ public class ApplicationTest extends InheritanceTest{
 		}
 	}
 
-	private static class ParcelTest implements Parcelable {
+	static class ParcelTest implements Parcelable {
 		private int pInt;
 		private String str;
 		private double d;
