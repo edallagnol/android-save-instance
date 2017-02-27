@@ -27,3 +27,27 @@ dependencies {
 	androidTestCompile 'com.android.support.test:runner:0.5'
 	androidTestCompile 'com.android.support.test:rules:0.5'
 }
+
+apply plugin: 'maven-publish'
+
+group = 'com.edallagnol'
+version = '0.1'
+
+publishing {
+	repositories {
+		maven {
+			url myMavenRepoWriteUrl
+		}
+	}
+
+	publications {
+		aar(MavenPublication) {
+			groupId group
+			artifactId "save-instance-state"
+			version project.version
+
+			artifact("$buildDir/outputs/aar/${project.name}-release.aar")
+		}
+
+	}
+}

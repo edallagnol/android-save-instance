@@ -10,7 +10,7 @@ import java.util.List;
 
 class Injector<T> {
 	private static final int INVALID_MODIFIERS = Modifier.STATIC | Modifier.FINAL;
-	private static final int CACHE_SIZE = 5; // 5 least recent used entries
+	private static final int CACHE_SIZE = 8; // 8 least recent used entries
 	private static final LinkedHashMap<Class, Injector> injectorsCache;
 
 	static {
