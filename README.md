@@ -6,7 +6,7 @@ Maven Repository: https://mymavenrepo.com/repo/Ghd1bN1WIPA0LBBLKxW8/
 
 ###Gradle
 
-Top build.gradle:
+Project build.gradle:
 
 <pre>
 allprojects {
