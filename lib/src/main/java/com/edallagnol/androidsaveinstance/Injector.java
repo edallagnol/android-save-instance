@@ -63,16 +63,16 @@ class Injector<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> Injector<T> from(Class<T> clss) {
+	static <T> Injector<T> from(Class<T> clss, Class<?> parametrizedSubClass) {
 		Injector<T> cached = injectorsCache.get(clss);
 		if (cached == null) {
-			cached = Injector.create(clss);
+			cached = Injector.create(clss, parametrizedSubClass);
 			injectorsCache.put(clss, cached);
 		}
 		return cached;
 	}
 
-	static <T> Injector<T> create(Class<T> clss) {
+	static <T> Injector<T> create(Class<T> clss, Class<?> parametrizedSubClass) {
 		List<Field> l = new ArrayList<>();
 		List<Bundler> b = new ArrayList<>();
 
@@ -86,7 +86,7 @@ class Injector<T> {
 			}
 			field.setAccessible(true);
 			l.add(field);
-			b.add(Bundler.from(field));
+			b.add(Bundler.from(field, parametrizedSubClass));
 		}
 
 		return new Injector<>(

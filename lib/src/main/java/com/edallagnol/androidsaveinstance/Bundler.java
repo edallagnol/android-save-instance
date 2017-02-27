@@ -8,8 +8,11 @@ import android.util.ArrayMap;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericDeclaration;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +54,7 @@ public abstract class Bundler<T> {
 		}
 	}
 
-	static Bundler<?> from(Field field) {
+	static Bundler<?> from(Field field, Class<?> parametrizedSubClass) {
 		Class<?> clss = field.getType();
 
 		Class<? extends Bundler> customBundler = field.getAnnotation(Save.class).value();
@@ -89,18 +92,14 @@ public abstract class Bundler<T> {
 		}
 
 		if (List.class.isAssignableFrom(clss)) {
-			ParameterizedType listType = (ParameterizedType) field.getGenericType();
-			Class<?> typeArg = (Class<?>) listType.getActualTypeArguments()[0];
+			Class<?> typeArg = getFieldGenericType(parametrizedSubClass, field, 0);
 			if (Parcelable.class.isAssignableFrom(typeArg)) {
-				/*if (!ArrayList.class.isAssignableFrom(clss)) {
-					Log.w("AndroidSaveInstance", "Only ArrayList is Supported!");
-				}*/
 				return Bundlers.ParcelableArrayListBundler.instance;
 			}
 			if (Serializable.class.isAssignableFrom(typeArg)) {
 				return Bundlers.SerializableBundler.instance;
 			}
-			throw new RuntimeException("The type " + typeArg.getName()
+			throw new RuntimeException("The type " + typeArg
 					+ " must be Parcelable/Serializable." );
 		}
 
@@ -108,6 +107,66 @@ public abstract class Bundler<T> {
 			return Bundlers.SerializableBundler.instance;
 		}
 
+		if (CharSequence.class.isAssignableFrom(clss)) {
+			return Bundlers.CharSequenceBundler.instance;
+		}
+
 		throw new RuntimeException("Bundler for " + field.getType() + " not found.");
+	}
+
+	private static Class<?> getFieldGenericType(Class<?> parametrizedSubClass, Field field, int pos) {
+		ParameterizedType listType = (ParameterizedType) field.getGenericType();
+		Type typeArg = listType.getActualTypeArguments()[pos];
+		if (typeArg instanceof Class) {
+			return (Class<?>) typeArg;
+		}
+
+		// parameterized type - find definition
+		if (typeArg instanceof TypeVariable) {
+			// based on http://stackoverflow.com/a/25974010/2047679
+			TypeVariable tVariable = (TypeVariable) typeArg;
+			Class<?> c = parametrizedSubClass;
+			Map<Type, Class<?>> mapping = new HashMap<>();
+
+			while (c != null) {
+				Type t = c.getGenericSuperclass();
+				if (t instanceof ParameterizedType) {
+					ParameterizedType pt = (ParameterizedType) t;
+					Type[] typeArgs = pt.getActualTypeArguments();
+					TypeVariable<?>[] tp = ((GenericDeclaration) pt.getRawType())
+							.getTypeParameters();
+
+					// encontramos a definição
+					if (pt.getRawType() == field.getDeclaringClass()) {
+						for (int i = typeArgs.length; i-- != 0; ) {
+							if (tp[i].getName().equals(tVariable.getName())) {
+								Type arg = typeArgs[i];
+								if (arg instanceof Class) {
+									return (Class<?>) arg;
+								} else {
+									return mapping.get(arg);
+								}
+							}
+						}
+						throw new AssertionError("Cannot find type " + tVariable.getName()
+								+ " in " + pt.getRawType());
+					}
+
+					for (int i = typeArgs.length; i-- != 0; ) {
+						if (typeArgs[i] instanceof Class<?>) {
+							mapping.put(tp[i], (Class<?>) typeArgs[i]);
+						} else {
+							mapping.put(tp[i], mapping.get(typeArgs[i]));
+						}
+					}
+					c = (Class<?>) pt.getRawType();
+				} else {
+					c = c.getSuperclass();
+				}
+			}
+		}
+
+		throw new AssertionError("Cannot find type of " + field.getDeclaringClass().getName() + "."
+				+ field.getName());
 	}
 }

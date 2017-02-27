@@ -20,7 +20,7 @@ public class SaveInstance {
 	public static <T extends J, J> void save(T obj, Bundle outState, Class<J> baseClass) {
 		Class<?> clss = obj.getClass();
 		do {
-			Injector injector = Injector.from(clss);
+			Injector injector = Injector.from(clss, obj.getClass());
 			injector.save(obj, outState);
 		} while (clss != baseClass
 				&& (clss = clss.getSuperclass()) != null);
@@ -34,7 +34,7 @@ public class SaveInstance {
 
 		Class<?> clss = obj.getClass();
 		do {
-			Injector injector = Injector.from(clss);
+			Injector injector = Injector.from(clss, obj.getClass());
 			injector.restore(obj, savedState);
 		} while (clss != baseClass
 				&& (clss = clss.getSuperclass()) != null);
