@@ -17,10 +17,11 @@ import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
 public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest> {
-	private static final long ITERATIONS = 10000L;
+	private static final long ITERATIONS = 1000L;
 	@Save private int tInt;
 	@Save private double tDouble;
 	@Save private String tString;
+	@Save private CharSequence tCharSequence;
 	@Save private ParcelTest tParcel;
 	@Save private List<String> tList;
 	@Save private List<ParcelTest> tParcelList;
@@ -62,8 +63,8 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 		compare(false);
 	}
 
-	// max 2 ms per iteration
-	@Test(timeout = ITERATIONS * 2)
+	// max 3 ms per iteration
+	@Test(timeout = ITERATIONS * 3)
 	public void performanceInjectorCreationTest() throws Exception {
 		long time = System.currentTimeMillis();
 		for (long i = ITERATIONS; i-- != 0L; ) {
@@ -86,8 +87,8 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 		Log.i("AppTest-saveLoadRefs", "P/ operation time: " + ((double) time / ITERATIONS) + " ms");
 	}
 
-	// max 0.8 ms per iteration
-	@Test(timeout = (long)(ITERATIONS * 0.8))
+	// max 1 ms per iteration
+	@Test(timeout = ITERATIONS)
 	public void performanceSaveLoadTest() throws Exception {
 		long time = System.currentTimeMillis();
 		for (long i = ITERATIONS; i-- != 0L; ) {
@@ -103,6 +104,7 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 		tInt = 1;
 		tDouble = 1.;
 		tString = "s";
+		tCharSequence = tString;
 		tParcel = new ParcelTest(tInt, tString, tDouble);
 		tList = new ArrayList<>();
 		tList.add(tString);
@@ -129,6 +131,7 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 		tInt = 0;
 		tDouble = 0.;
 		tString = null;
+		tCharSequence = null;
 		tParcel = null;
 		tList = null;
 		tParcelList = null;
@@ -150,6 +153,7 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 		Assert.assertEquals(tInt, 1);
 		Assert.assertEquals(tDouble, 1.);
 		Assert.assertEquals(tString, "s");
+		Assert.assertEquals(tCharSequence, tString);
 		Assert.assertEquals(tParcel, new ParcelTest(tInt, tString, tDouble));
 		Assert.assertEquals(tList, Collections.singletonList("s"));
 		Assert.assertEquals(tParcelList, Collections.singletonList(
