@@ -23,6 +23,6 @@ Module build.gradle:
 <pre>
 dependencies {
 	...
-	compile group: 'com.edallagnol', name: 'save-instance-state', version: '0.1'
+	compile group: 'com.edallagnol', name: 'android-save-instance', version: '0.3'
 }
 </pre>
