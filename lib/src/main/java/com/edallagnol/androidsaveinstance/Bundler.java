@@ -105,8 +105,7 @@ public abstract class Bundler<T> {
 		}
 
 		if (Set.class.isAssignableFrom(clss)) {
-			ParameterizedType setType = (ParameterizedType) field.getGenericType();
-			Class<?> typeArg = (Class<?>) setType.getActualTypeArguments()[0];
+			Class<?> typeArg = getFieldGenericType(parametrizedSubClass, field, 0);
 			if (Parcelable.class.isAssignableFrom(typeArg)) {
 				return Bundlers.ParcelableSetBundler.instance;
 			}
