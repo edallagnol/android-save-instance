@@ -56,7 +56,7 @@ public abstract class Bundler<T> {
 	}
 
 	static Bundler<?> from(Field field, Class<?> parametrizedSubClass) {
-		Class<?> clss = field.getType();
+		Class<?> clss = getFieldGenericType(field, parametrizedSubClass);
 
 		Class<? extends Bundler> customBundler = field.getAnnotation(Save.class).value();
 		if (customBundler != Bundlers.VoidBundler.class) {
@@ -93,7 +93,7 @@ public abstract class Bundler<T> {
 		}
 
 		if (List.class.isAssignableFrom(clss)) {
-			Class<?> typeArg = getFieldGenericType(parametrizedSubClass, field, 0);
+			Class<?> typeArg = getFieldGenericType(field, 0, parametrizedSubClass);
 			if (Parcelable.class.isAssignableFrom(typeArg)) {
 				return Bundlers.ParcelableArrayListBundler.instance;
 			}
@@ -105,7 +105,7 @@ public abstract class Bundler<T> {
 		}
 
 		if (Set.class.isAssignableFrom(clss)) {
-			Class<?> typeArg = getFieldGenericType(parametrizedSubClass, field, 0);
+			Class<?> typeArg = getFieldGenericType(field, 0, parametrizedSubClass);
 			if (Parcelable.class.isAssignableFrom(typeArg)) {
 				return Bundlers.ParcelableSetBundler.instance;
 			}
@@ -127,7 +127,22 @@ public abstract class Bundler<T> {
 		throw new RuntimeException("Bundler for " + field.getType() + " not found.");
 	}
 
-	private static Class<?> getFieldGenericType(Class<?> parametrizedSubClass, Field field, int pos) {
+	private static Class<?> getFieldGenericType(Field field, Class<?> parametrizedSubClass) {
+		Type genericType = field.getGenericType();
+		if (genericType instanceof Class) {
+			return (Class<?>) genericType;
+		}
+		// generics
+		if (genericType instanceof TypeVariable) {
+			return getGenericClassFromType(
+					(TypeVariable) genericType,
+					field.getDeclaringClass(),
+					parametrizedSubClass);
+		}
+		return field.getType();
+	}
+
+	private static Class<?> getFieldGenericType(Field field, int pos, Class<?> parametrizedSubClass) {
 		ParameterizedType listType = (ParameterizedType) field.getGenericType();
 		Type typeArg = listType.getActualTypeArguments()[pos];
 		if (typeArg instanceof Class) {
@@ -136,50 +151,58 @@ public abstract class Bundler<T> {
 
 		// parameterized type - find definition
 		if (typeArg instanceof TypeVariable) {
-			// based on http://stackoverflow.com/a/25974010/2047679
-			TypeVariable tVariable = (TypeVariable) typeArg;
-			Class<?> c = parametrizedSubClass;
-			Map<Type, Class<?>> mapping = new HashMap<>();
-
-			while (c != null) {
-				Type t = c.getGenericSuperclass();
-				if (t instanceof ParameterizedType) {
-					ParameterizedType pt = (ParameterizedType) t;
-					Type[] typeArgs = pt.getActualTypeArguments();
-					TypeVariable<?>[] tp = ((GenericDeclaration) pt.getRawType())
-							.getTypeParameters();
-
-					// encontramos a definição
-					if (pt.getRawType() == field.getDeclaringClass()) {
-						for (int i = typeArgs.length; i-- != 0; ) {
-							if (tp[i].getName().equals(tVariable.getName())) {
-								Type arg = typeArgs[i];
-								if (arg instanceof Class) {
-									return (Class<?>) arg;
-								} else {
-									return mapping.get(arg);
-								}
-							}
-						}
-						throw new AssertionError("Cannot find type " + tVariable.getName()
-								+ " in " + pt.getRawType());
-					}
-
-					for (int i = typeArgs.length; i-- != 0; ) {
-						if (typeArgs[i] instanceof Class<?>) {
-							mapping.put(tp[i], (Class<?>) typeArgs[i]);
-						} else {
-							mapping.put(tp[i], mapping.get(typeArgs[i]));
-						}
-					}
-					c = (Class<?>) pt.getRawType();
-				} else {
-					c = c.getSuperclass();
-				}
-			}
+			return getGenericClassFromType((TypeVariable) typeArg,
+					field.getDeclaringClass(),
+					parametrizedSubClass);
 		}
 
 		throw new AssertionError("Cannot find type of " + field.getDeclaringClass().getName() + "."
 				+ field.getName());
+	}
+
+	private static Class<?> getGenericClassFromType(TypeVariable genericType,
+													Class<?> declaringClass,
+													Class<?> parametrizedSubClass) {
+		// based on http://stackoverflow.com/a/25974010/2047679
+		Map<Type, Class<?>> mapping = new HashMap<>();
+
+		for (Class<?> c = parametrizedSubClass; c != null; ) {
+			Type t = c.getGenericSuperclass();
+			if (t instanceof ParameterizedType) {
+				ParameterizedType pt = (ParameterizedType) t;
+				Type[] typeArgs = pt.getActualTypeArguments();
+				Type rawType = pt.getRawType();
+				TypeVariable<?>[] tp = ((GenericDeclaration) rawType).getTypeParameters();
+
+				if (rawType == declaringClass) {
+					for (int i = typeArgs.length; i-- != 0; ) {
+						if (tp[i].getName().equals(genericType.getName())) {
+							Type arg = typeArgs[i];
+							if (arg instanceof Class) {
+								return (Class<?>) arg;
+							} else {
+								return mapping.get(arg);
+							}
+						}
+					}
+					throw new AssertionError("Cannot find type " + genericType.getName()
+							+ " in " + rawType);
+				}
+
+				for (int i = typeArgs.length; i-- != 0; ) {
+					if (typeArgs[i] instanceof Class<?>) {
+						mapping.put(tp[i], (Class<?>) typeArgs[i]);
+					} else {
+						mapping.put(tp[i], mapping.get(typeArgs[i]));
+					}
+				}
+				c = (Class<?>) rawType;
+			} else {
+				c = c.getSuperclass();
+			}
+		}
+
+		throw new AssertionError("Cannot find type " + genericType.getName()
+				+ " in " + declaringClass);
 	}
 }

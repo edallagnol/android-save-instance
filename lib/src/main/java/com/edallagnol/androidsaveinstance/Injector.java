@@ -10,11 +10,11 @@ import java.util.List;
 
 class Injector<T> {
 	private static final int INVALID_MODIFIERS = Modifier.STATIC | Modifier.FINAL;
-	private static final int CACHE_SIZE = 8; // 8 least recent used entries
+	private static final int CACHE_SIZE = 8; // 8 least created entries
 	private static final LinkedHashMap<Class, Injector> injectorsCache;
 
 	static {
-		injectorsCache = new LinkedHashMap<Class, Injector>(CACHE_SIZE, 0.75f, true) {
+		injectorsCache = new LinkedHashMap<Class, Injector>(CACHE_SIZE, 0.75f, false) {
 			@Override
 			protected boolean removeEldestEntry(Entry eldest) {
 				return size() > CACHE_SIZE;
@@ -63,11 +63,13 @@ class Injector<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> Injector<T> from(Class<T> clss, Class<?> parametrizedSubClass) {
+	static <T> Injector<T> from(Class<T> clss, Class<?> parametrizedSubClass, boolean insertInCache) {
 		Injector<T> cached = injectorsCache.get(clss);
 		if (cached == null) {
 			cached = Injector.create(clss, parametrizedSubClass);
-			injectorsCache.put(clss, cached);
+			if (insertInCache) {
+				injectorsCache.put(clss, cached);
+			}
 		}
 		return cached;
 	}

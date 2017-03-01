@@ -5,4 +5,5 @@ import java.util.List;
 class InheritanceTest<T> {
 	@Save int tInheritance;
 	@Save List<T> tListGeneric;
+	@Save T tGeneric;
 }

@@ -8,6 +8,7 @@ import android.util.Log;
 
 import junit.framework.Assert;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -19,7 +20,7 @@ import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
 public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest> {
-	private static final long ITERATIONS = 1000L;
+	private static final int ITERATIONS = 1000;
 	@Save private int tInt;
 	@Save private double tDouble;
 	@Save private String tString;
@@ -35,17 +36,18 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 	//same name test
 	@Save private int tInheritance;
 
+	@Before
+	public void setUp() {
+		SaveInstance.putCustomBundler(CustomBundlerObj.class, new TestCustomBundler());
+	}
+
 	@Test
 	public void testParcel() throws Exception {
 		Bundle test = new Bundle();
+		create();
 		save(test, true);
-
-		Parcel parcel = Parcel.obtain();
-		parcel.writeBundle(test);
-		parcel.setDataPosition(0);
-		test = parcel.readBundle(getClass().getClassLoader());
-		parcel.recycle();
-
+		clean();
+		test = parcel(test);
 		load(test, true);
 		compare(true);
 	}
@@ -53,7 +55,9 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 	@Test
 	public void testReference() throws Exception {
 		Bundle test = new Bundle();
+		create();
 		save(test, true);
+		clean();
 		load(test, true);
 		compare(true);
 	}
@@ -61,18 +65,22 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 	@Test
 	public void testNoInheritance() throws Exception {
 		Bundle test = new Bundle();
+		create();
 		save(test, false);
+		clean();
 		load(test, false);
 		compare(false);
 	}
 
-	// max 3 ms per iteration
-	@Test(timeout = ITERATIONS * 3)
+	// max 4 ms per iteration
+	@Test(timeout = ITERATIONS * 4)
 	public void performanceInjectorCreationTest() throws Exception {
 		long time = System.currentTimeMillis();
-		for (long i = ITERATIONS; i-- != 0L; ) {
+
+		for (int i = ITERATIONS; i-- != 0; ) {
 			Injector.create(ApplicationTest.class, ApplicationTest.class);
 		}
+
 		time = System.currentTimeMillis() - time;
 		Log.i("AppTest-injector", "Total time: " + time + " ms");
 		Log.i("AppTest-injector", "P/ operation time: " + ((double) time / ITERATIONS) + " ms");
@@ -81,34 +89,55 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 	// max 0.6 ms per iteration
 	@Test(timeout = (long)(ITERATIONS * 0.6))
 	public void performanceSaveLoadTestRefs() throws Exception {
+		create();
+		Bundle test = new Bundle();
 		long time = System.currentTimeMillis();
-		for (long i = ITERATIONS; i-- != 0L; ) {
-			testReference();
+
+		for (int i = ITERATIONS; i-- != 0; ) {
+			save(test, true);
+			load(test, true);
 		}
+
 		time = System.currentTimeMillis() - time;
 		Log.i("AppTest-saveLoadRefs", "Total time: " + time + " ms");
 		Log.i("AppTest-saveLoadRefs", "P/ operation time: " + ((double) time / ITERATIONS) + " ms");
 	}
 
-	// max 1 ms per iteration
-	@Test(timeout = ITERATIONS)
+	// max 2 ms per iteration
+	@Test(timeout = ITERATIONS * 2)
 	public void performanceSaveLoadTest() throws Exception {
+		create();
+		Bundle test = new Bundle();
 		long time = System.currentTimeMillis();
-		for (long i = ITERATIONS; i-- != 0L; ) {
-			testParcel();
+
+		for (int i = ITERATIONS; i-- != 0; ) {
+			save(test, true);
+			test = parcel(test);
+			load(test, true);
 		}
+
 		time = System.currentTimeMillis() - time;
 		Log.i("AppTest-saveLoadParcel", "Total time: " + time + " ms");
 		Log.i("AppTest-saveLoadParcel", "P/ operation time: " + ((double) time / ITERATIONS)
 				+ " ms");
 	}
 
-	private void save(Bundle test, boolean inheritanceTest) {
+	private Bundle parcel(Bundle bundle) {
+		Parcel parcel = Parcel.obtain();
+		parcel.writeBundle(bundle);
+		parcel.setDataPosition(0);
+		bundle = parcel.readBundle(getClass().getClassLoader());
+		parcel.recycle();
+		return bundle;
+	}
+
+	private void create() {
 		tInt = 1;
 		tDouble = 1.;
 		tString = "s";
 		tCharSequence = tString;
 		tParcel = new ParcelTest(tInt, tString, tDouble);
+		tGeneric = tParcel;
 		tList = new ArrayList<>();
 		tList.add(tString);
 		tParcelList = new ArrayList<>(Collections.singleton(tParcel));
@@ -120,9 +149,25 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 		super.tListGeneric = tParcelList;
 		this.tInheritance = 2;
 		super.tInheritance = tInt;
+	}
 
-		SaveInstance.putCustomBundler(CustomBundlerObj.class, new TestCustomBundler());
+	private void clean() {
+		tInt = 0;
+		tDouble = 0.;
+		tString = null;
+		tCharSequence = null;
+		tGeneric = tParcel = null;
+		tList = null;
+		tParcelList = null;
+		tParcelSet = null;
+		tParcelArray = null;
+		tPrimitiveArray = null;
+		tBundler = 0;
+		super.tListGeneric = null;
+		this.tInheritance = super.tInheritance = 0;
+	}
 
+	private void save(Bundle test, boolean inheritanceTest) {
 		if (inheritanceTest) {
 			SaveInstance.save(this, test, InheritanceTest.class);
 		} else {
@@ -131,21 +176,6 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 	}
 
 	private void load(Bundle test, boolean inheritanceTest) {
-		tInt = 0;
-		tDouble = 0.;
-		tString = null;
-		tCharSequence = null;
-		tParcel = null;
-		tList = null;
-		tParcelList = null;
-		tParcelSet = null;
-		tParcelArray = null;
-		tPrimitiveArray = null;
-		tBundler = 0;
-		super.tListGeneric = null;
-		this.tInheritance = 0;
-		super.tInheritance = 0;
-
 		if (inheritanceTest) {
 			SaveInstance.restore(this, test, InheritanceTest.class);
 		} else {
@@ -167,6 +197,7 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 		Assert.assertEquals(tBundler, tInt + 2);
 		Assert.assertEquals(tCustomBundler, new CustomBundlerObj(tInt));
 		if (inheritanceTest) {
+			Assert.assertEquals(super.tGeneric, tParcel);
 			Assert.assertEquals(this.tParcelList, tListGeneric);
 			Assert.assertEquals(this.tInheritance, 2);
 			Assert.assertEquals(super.tInheritance, tInt);
