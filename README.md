@@ -27,7 +27,7 @@ Activity (or fragment):
 import com.edallagnol.androidsaveinstance.Save;
 
 public class MyActivity extends BaseActivity {
-	@Save private ArrayList&lt#MyParcelable&gt# mList;
+	@Save private ArrayList<MyParcelable> mList;
 	@Save private int mInt;
 }
 ```
