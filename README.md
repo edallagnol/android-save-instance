@@ -3,7 +3,7 @@
 ###Usage:
 
 Base Activity (or fragment):
-<pre>
+```java
 import com.edallagnol.androidsaveinstance.SaveInstance;
 
 public class BaseActivity extends AppCompatActivity {
@@ -19,18 +19,18 @@ public class BaseActivity extends AppCompatActivity {
 		SaveInstance.save(this, outState, BaseActivity.class);
 	}
 }
-</pre>
+```
 
 Activity (or fragment):
 
-<pre>
+```java
 import com.edallagnol.androidsaveinstance.Save;
 
 public class MyActivity extends BaseActivity {
 	@Save private ArrayList&lt#MyParcelable&gt# mList;
 	@Save private int mInt;
 }
-</pre>
+```
 
 ###Gradle
 
