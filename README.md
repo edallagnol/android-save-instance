@@ -32,8 +32,6 @@ public class MyActivity extends BaseActivity {
 }
 </pre>
 
-Maven Repository: https://mymavenrepo.com/repo/Ghd1bN1WIPA0LBBLKxW8/
-
 ###Gradle
 
 Project build.gradle:
