@@ -32,7 +32,7 @@ public class MyActivity extends BaseActivity {
 }
 ```
 
-### Gradle
+### Gradle:
 
 Project build.gradle:
 
