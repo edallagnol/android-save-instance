@@ -1,6 +1,6 @@
 # android-save-instance
 
-###Usage:
+### Usage:
 
 Base Activity (or fragment):
 ```java
@@ -32,7 +32,7 @@ public class MyActivity extends BaseActivity {
 }
 ```
 
-###Gradle
+### Gradle
 
 Project build.gradle:
 
