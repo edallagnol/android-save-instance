@@ -51,6 +51,6 @@ Module build.gradle:
 <pre>
 dependencies {
 	...
-	compile group: 'com.edallagnol', name: 'android-save-instance', version: '0.3'
+	compile group: 'com.edallagnol', name: 'android-save-instance', version: '0.5'
 }
 </pre>
