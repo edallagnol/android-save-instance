@@ -31,7 +31,7 @@ dependencies {
 apply plugin: 'maven-publish'
 
 group = 'com.edallagnol'
-version = '0.3'
+version = '0.5'
 
 publishing {
 	repositories {
