@@ -148,7 +148,9 @@ public abstract class Bundler<T> {
 		if (typeArg instanceof Class) {
 			return (Class<?>) typeArg;
 		}
-
+		if (typeArg instanceof ParameterizedType) {
+			return (Class<?>) ((ParameterizedType) typeArg).getRawType();
+		}
 		// parameterized type - find definition
 		if (typeArg instanceof TypeVariable) {
 			return getGenericClassFromType((TypeVariable) typeArg,

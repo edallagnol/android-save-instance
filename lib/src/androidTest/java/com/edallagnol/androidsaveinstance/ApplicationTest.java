@@ -27,6 +27,7 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 	@Save private CharSequence tCharSequence;
 	@Save private ParcelTest tParcel;
 	@Save private List<String> tList;
+	@Save private List<Class<?>> tClassList;
 	@Save private List<ParcelTest> tParcelList;
 	@Save private Set<ParcelTest> tParcelSet;
 	@Save private ParcelTest[] tParcelArray;
@@ -140,6 +141,8 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 		tGeneric = tParcel;
 		tList = new ArrayList<>();
 		tList.add(tString);
+		tClassList = new ArrayList<>();
+		tClassList.add(ApplicationTest.class);
 		tParcelList = new ArrayList<>(Collections.singleton(tParcel));
 		tParcelSet = new HashSet<>(Collections.singleton(tParcel));
 		tParcelArray = new ParcelTest[] { tParcel };
@@ -158,6 +161,7 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 		tCharSequence = null;
 		tGeneric = tParcel = null;
 		tList = null;
+		tClassList = null;
 		tParcelList = null;
 		tParcelSet = null;
 		tParcelArray = null;
@@ -190,6 +194,7 @@ public class ApplicationTest extends InheritanceTest<ApplicationTest.ParcelTest>
 		Assert.assertEquals(tCharSequence, tString);
 		Assert.assertEquals(tParcel, new ParcelTest(tInt, tString, tDouble));
 		Assert.assertEquals(tList, Collections.singletonList("s"));
+		Assert.assertEquals(tClassList, Collections.singletonList(ApplicationTest.class));
 		Assert.assertEquals(tParcelList, Collections.singletonList(tParcel));
 		Assert.assertEquals(tParcelSet, Collections.singleton(tParcel));
 		Assert.assertEquals(tParcelArray[0], tParcel);
